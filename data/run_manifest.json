@@ -1,0 +1,36 @@
+{
+  "timestamp_utc": "2026-10-14T07:48:35.470400+00:00",
+  "dry_run": false,
+  "python": "3.13.15",
+  "torch": "2.11.0+cu130",
+  "transformers": "5.19.0",
+  "sklearn": "1.6.1",
+  "pandas": "2.2.3",
+  "numpy": "2.1.3",
+  "model": "bert-base-uncased",
+  "seeds": {
+    "main": 42,
+    "ensemble": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004
+    ]
+  },
+  "task3_recipe": {
+    "epochs": 6,
+    "batch": 16,
+    "lr": 2e-05,
+    "max_len": 96,
+    "folds": 5
+  },
+  "task2_recipe": {
+    "epochs": 20,
+    "batch": 16,
+    "lr": 5e-05,
+    "threshold": 0.3
+  },
+  "training_table_hash": "f1e79176ccad0d7c",
+  "label_status": "FINAL"
+}

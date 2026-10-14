@@ -1,0 +1,11 @@
+criterion,target,result,status
+Usable data volume,">=12,000 unique reviews","33,977 reviews",met
+Manually annotated sentences,"~1,000",500 gold sentences (+ 326 audit/S5 pairs),below plan
+Task 1 overall sentiment macro-F1,>=0.80 and > best non-DNN baseline,BERT 0.664 vs TF-IDF 0.631 (recorded run),below target
+Task 2 aspect detection macro-F1,>=0.70,BERT 0.611 vs TF-IDF 0.397 @thr 0.3 (CV),below target
+Task 3 aspect sentiment macro-F1 (3-class),>=0.70,BERT 0.566 vs TF-IDF 0.545 (CV),below target
+Task 3 negative-vs-rest macro-F1 (supplementary),(report),BERT 0.801 vs TF-IDF 0.747,reported
+Version analysis,">=1 game, 14-day windows, >=100 reviews each",3 usable transition(s),met
+Issue profiles + cross-game comparison,ranked per game; common aspects normalised,"06_issue_priority_by_game, 06_cross_game_common_*",produced
+Dashboard,Streamlit app,not part of this notebook,pending
+Reproducibility,README + dependency file,run_manifest.json written; README / requirements.txt still to write,partly

@@ -1,0 +1,4 @@
+game,version,first_seen,n_pre,n_post,post_share_on_new_version,usable(>=100 each),stars_pre,stars_post,stars_delta,stars_delta_95CI,CI_excludes_0
+royalmatch,37281.0,2026-07-08,634,709,0.63,True,3.93,3.75,-0.18,"[-0.36, -0.00]",True
+royalmatch,37743.0,2026-08-05,796,774,0.68,True,3.65,3.72,0.07,"[-0.10, 0.23]",False
+genshin,6.7.0,2026-07-01,1283,1293,0.44,True,2.66,2.88,0.22,"[0.08, 0.35]",True

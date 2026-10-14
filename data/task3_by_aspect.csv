@@ -1,0 +1,13 @@
+aspect,n,neg,neu,pos,acc_negVsRest_BERT,acc_negVsRest_TFIDF,acc_if_all_negative,AUC_BERT,pos_recall_BERT,note
+performance_stability,100,93,2,5,0.91,0.94,0.93,0.76,0.0,
+monetization_value,67,50,3,14,0.78,0.82,0.75,0.74,0.64,
+advertisement,48,23,1,24,0.73,0.75,0.48,0.86,0.79,
+level_difficulty_balance,62,45,2,15,0.84,0.81,0.73,0.83,0.67,
+content_progression,138,71,9,58,0.86,0.68,0.51,0.9,0.86,
+paywall,22,16,0,6,0.77,0.77,0.73,0.69,0.5,n<30
+gacha_rates,75,43,4,28,0.79,0.71,0.57,0.83,0.79,
+character_operator_balance,49,29,7,13,0.78,0.63,0.59,0.85,0.77,
+matchmaking,68,66,0,2,0.97,0.97,0.97,0.99,0.0,<5 positives
+cheating,39,35,0,4,0.92,0.9,0.9,0.75,0.25,<5 positives
+grind_progression,4,2,1,1,0.5,0.25,0.5,0.0,0.0,n<30
+account_support,85,60,6,19,0.8,0.75,0.71,0.77,0.68,

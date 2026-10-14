@@ -1,0 +1,13 @@
+aspect,support,AP_TFIDF,AP_BERT,F1_TFIDF,F1_BERT,note
+performance_stability,71,0.527,0.799,0.278,0.738,
+monetization_value,42,0.468,0.689,0.29,0.71,
+advertisement,18,0.805,0.994,0.714,0.971,
+level_difficulty_balance,35,0.54,0.667,0.365,0.611,
+content_progression,78,0.563,0.615,0.298,0.581,F1<0.60
+paywall,22,0.735,0.751,0.632,0.612,
+gacha_rates,25,0.537,0.679,0.5,0.625,
+character_operator_balance,24,0.361,0.494,0.322,0.481,F1<0.60
+matchmaking,40,0.846,0.91,0.578,0.789,
+cheating,15,0.242,0.463,0.308,0.364,F1<0.60
+grind_progression,4,0.035,0.038,0.0,0.0,support<15
+account_support,58,0.864,0.873,0.476,0.845,

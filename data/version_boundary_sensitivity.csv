@@ -1,0 +1,37 @@
+transition,window_anchor,subset,n_pre,n_post,nonUS_post_%,stars_pre,stars_post,stars_delta,delta_95CI,CI_excludes_0
+royalmatch 37281.0,exact timestamp,all markets,634,709,0.0,3.93,3.75,-0.18,"[-0.36, -0.02]",True
+royalmatch 37281.0,exact timestamp,US only,634,709,0.0,3.93,3.75,-0.18,"[-0.35, -0.00]",True
+royalmatch 37281.0,midnight of that day (S7d/S9f),all markets,618,715,0.0,3.95,3.76,-0.19,"[-0.36, -0.02]",True
+royalmatch 37281.0,midnight of that day (S7d/S9f),US only,618,715,0.0,3.95,3.76,-0.19,"[-0.36, -0.02]",True
+royalmatch 37281.0,exact -2 day,all markets,621,713,0.0,3.95,3.77,-0.18,"[-0.35, -0.00]",True
+royalmatch 37281.0,exact -2 day,US only,621,713,0.0,3.95,3.77,-0.18,"[-0.35, -0.01]",True
+royalmatch 37281.0,exact -1 day,all markets,618,715,0.0,3.95,3.76,-0.19,"[-0.36, -0.01]",True
+royalmatch 37281.0,exact -1 day,US only,618,715,0.0,3.95,3.76,-0.19,"[-0.36, -0.01]",True
+royalmatch 37281.0,exact +1 day,all markets,654,709,0.0,3.94,3.74,-0.19,"[-0.36, -0.03]",True
+royalmatch 37281.0,exact +1 day,US only,654,709,0.0,3.94,3.74,-0.19,"[-0.36, -0.02]",True
+royalmatch 37281.0,exact +2 day,all markets,676,712,0.0,3.91,3.71,-0.2,"[-0.36, -0.02]",True
+royalmatch 37281.0,exact +2 day,US only,676,712,0.0,3.91,3.71,-0.2,"[-0.36, -0.03]",True
+royalmatch 37743.0,exact timestamp,all markets,796,774,0.0,3.65,3.72,0.07,"[-0.09, 0.24]",False
+royalmatch 37743.0,exact timestamp,US only,796,774,0.0,3.65,3.72,0.07,"[-0.10, 0.24]",False
+royalmatch 37743.0,midnight of that day (S7d/S9f),all markets,794,771,0.0,3.65,3.7,0.05,"[-0.12, 0.21]",False
+royalmatch 37743.0,midnight of that day (S7d/S9f),US only,794,771,0.0,3.65,3.7,0.05,"[-0.13, 0.22]",False
+royalmatch 37743.0,exact -2 day,all markets,752,795,0.0,3.72,3.62,-0.11,"[-0.29, 0.06]",False
+royalmatch 37743.0,exact -2 day,US only,752,795,0.0,3.72,3.62,-0.11,"[-0.27, 0.06]",False
+royalmatch 37743.0,exact -1 day,all markets,791,769,0.0,3.69,3.66,-0.03,"[-0.20, 0.13]",False
+royalmatch 37743.0,exact -1 day,US only,791,769,0.0,3.69,3.66,-0.03,"[-0.20, 0.14]",False
+royalmatch 37743.0,exact +1 day,all markets,783,789,0.0,3.61,3.71,0.1,"[-0.06, 0.26]",False
+royalmatch 37743.0,exact +1 day,US only,783,789,0.0,3.61,3.71,0.1,"[-0.07, 0.27]",False
+royalmatch 37743.0,exact +2 day,all markets,775,794,0.0,3.58,3.72,0.14,"[-0.03, 0.31]",False
+royalmatch 37743.0,exact +2 day,US only,775,794,0.0,3.58,3.72,0.14,"[-0.02, 0.30]",False
+genshin 6.7.0,exact timestamp,all markets,1283,1293,0.0,2.66,2.88,0.22,"[0.07, 0.36]",True
+genshin 6.7.0,exact timestamp,US only,1283,1293,0.0,2.66,2.88,0.22,"[0.08, 0.36]",True
+genshin 6.7.0,midnight of that day (S7d/S9f),all markets,1020,1562,0.0,2.49,2.92,0.43,"[0.29, 0.57]",True
+genshin 6.7.0,midnight of that day (S7d/S9f),US only,1020,1562,0.0,2.49,2.92,0.43,"[0.29, 0.57]",True
+genshin 6.7.0,exact -2 day,all markets,965,1655,0.0,2.52,2.85,0.33,"[0.20, 0.48]",True
+genshin 6.7.0,exact -2 day,US only,965,1655,0.0,2.52,2.85,0.33,"[0.19, 0.48]",True
+genshin 6.7.0,exact -1 day,all markets,986,1611,0.0,2.51,2.89,0.38,"[0.23, 0.52]",True
+genshin 6.7.0,exact -1 day,US only,986,1611,0.0,2.51,2.89,0.38,"[0.24, 0.52]",True
+genshin 6.7.0,exact +1 day,all markets,1466,1129,0.0,2.73,2.86,0.13,"[-0.00, 0.28]",False
+genshin 6.7.0,exact +1 day,US only,1466,1129,0.0,2.73,2.86,0.13,"[-0.01, 0.27]",False
+genshin 6.7.0,exact +2 day,all markets,1526,1034,0.0,2.72,2.91,0.2,"[0.05, 0.34]",True
+genshin 6.7.0,exact +2 day,US only,1526,1034,0.0,2.72,2.91,0.2,"[0.05, 0.34]",True

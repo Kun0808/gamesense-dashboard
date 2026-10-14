@@ -1,0 +1,3 @@
+model,macro_AP,fold_AP_mean,fold_AP_sd,macroF1@0.30,microF1@0.30,best_thr(OOF-tuned),macroF1@best,microF1@best
+TF-IDF + LR,0.544,0.651,0.049,0.397,0.359,0.45,0.467,0.552
+BERT,0.664,0.72,0.036,0.611,0.68,0.4,0.613,0.687
