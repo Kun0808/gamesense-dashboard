@@ -260,6 +260,27 @@ def page_priority():
             "- Aspects marked *check* have a recorded reliability concern (see the Method & reliability page).")
 
 
+@st.cache_data(show_spinner=False)
+def nonus_windows(game, wd):
+    """Share of non-US reviews in each trend window (same window grid as trend.csv)."""
+    meta = read_parquet("reviews_meta.parquet")
+    if meta is None:
+        return pd.DataFrame(columns=["window_start", "n", "non_us"])
+    d = meta[meta["game"] == game].copy()
+    d["at"] = pd.to_datetime(d["at"], errors="coerce")
+    d = d.dropna(subset=["at"])
+    if d.empty:
+        return pd.DataFrame(columns=["window_start", "n", "non_us"])
+    t0 = d["at"].min().normalize()
+    d["win"] = ((d["at"] - t0).dt.days // wd).astype(int)
+    out = d.groupby("win").agg(n=("reviewId", "size"), non_us=("market", lambda m: float((m != "us").mean()))).reset_index()
+    out["window_start"] = t0 + pd.to_timedelta(out["win"] * wd, unit="D")
+    return out[["window_start", "n", "non_us"]]
+
+
+NONUS_FLAG = 0.20      # windows with at least this share of non-US reviews are shaded in the all-markets view
+
+
 # ------------------------------------------------------------------ page 2
 def page_trends():
     st.title("Trends over time")
@@ -268,7 +289,7 @@ def page_trends():
         return missing("trend.csv")
     c1, c2, c3 = st.columns(3)
     game = c1.selectbox("Game", list(GAMES), format_func=game_name)
-    scope = c2.radio("Markets", ["all", "us"], format_func=lambda s: "All markets" if s == "all" else "US only", horizontal=True)
+    scope = c2.radio("Markets", ["all", "us"], index=1, format_func=lambda s: "All markets" if s == "all" else "US only", horizontal=True)
     metric = c3.selectbox("Metric", ["negative_per100", "mentions_per100"],
                           format_func=lambda m: "Negative mentions per 100 sentences" if m == "negative_per100" else "All mentions per 100 sentences")
     d = tr[(tr["game"] == game) & (tr["market_scope"] == scope)].copy()
@@ -296,13 +317,26 @@ def page_trends():
             if pd.notna(x):
                 fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=1, yref="paper", line=dict(color="grey", dash="dash"))
                 fig.add_annotation(x=x, y=1, yref="paper", text=f"v{r['version']}", showarrow=False, yanchor="bottom")
-    st.plotly_chart(fig)
     wd = int(d["window_days"].iloc[0])
+    shaded = 0
+    if scope == "all":
+        nu = nonus_windows(game, wd)
+        for _, r in nu[nu["non_us"] >= NONUS_FLAG].iterrows():
+            fig.add_shape(type="rect", x0=r["window_start"], x1=r["window_start"] + pd.Timedelta(days=wd), y0=0, y1=1, yref="paper",
+                          fillcolor="orange", opacity=0.15, line_width=0, layer="below")
+            shaded += 1
+    st.plotly_chart(fig)
     st.caption(f"Each point is a {wd}-day window. Black crosses mark windows with fewer than 100 reviews: treat those with caution. "
                "Rates are per 100 review sentences so that busy and quiet periods are comparable.")
     if scope == "all":
-        st.info("Non-US reviews are concentrated in the most recent weeks for some games, which can shift the mix of reviewers. "
-                "Switch to *US only* to check whether a change is just a market-mix effect.")
+        if shaded:
+            st.warning(f"Orange bands mark windows where at least {int(NONUS_FLAG * 100)}% of the reviews come from non-US markets. "
+                       "Those reviews were collected in a later batch, so a jump inside a band may reflect a different mix of reviewers rather than a real change. "
+                       "Switch to *US only* (the default) to compare like with like.")
+        else:
+            st.info("This game has no window with a large share of non-US reviews.")
+    else:
+        st.caption("US reviews only: the reviewer mix is consistent across windows. Windows with no US reviews have no point.")
     with st.expander("Window sizes"):
         st.dataframe(d[["Aspect", "window_start", "n_reviews", "n_sentences", "mentions", "negative_mentions"]]
                      .rename(columns={"window_start": "Window start", "n_reviews": "Reviews", "n_sentences": "Sentences",
@@ -506,6 +540,14 @@ def page_method():
                         "predicting 'negative' for everything.")
             st.dataframe(a, hide_index=True)
         st.caption("The neutral class has very few labelled examples and is rarely predicted correctly, so negative-vs-rest is the more meaningful measure.")
+        aud = read_csv("label_audit_summary.csv")
+        if aud is not None:
+            st.markdown("**Label audit.** The annotator re-labelled 60 sentence-aspect pairs without seeing the original labels or the model's predictions: "
+                        "30 chosen at random and 30 where the cross-validated model most confidently disagreed with the label.")
+            st.dataframe(aud, hide_index=True)
+            st.caption("In the random sample no label flipped between negative and positive; the differences involved the neutral class or whether the aspect "
+                       "was mentioned at all. The same person did the original labelling and the audit, so this measures consistency over time, "
+                       "not independent agreement, and probably understates label noise. With 30 pairs per sample the intervals are wide.")
         cm = DATA.parent / "docs" / "figures" / "task3_confusion.png"
         if cm.exists():
             st.image(str(cm), caption="Task 3 confusion matrix (out-of-fold)", width=420)
