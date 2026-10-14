@@ -1,0 +1,4 @@
+model,macro_f1,micro_f1,macro_AP
+Keyword matching on the aspect taxonomy (with game mask),0.62,0.615,
+TF-IDF + logistic regression (cross-validated),0.397,0.359,0.544
+BERT (cross-validated),0.611,0.68,0.664

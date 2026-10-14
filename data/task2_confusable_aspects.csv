@@ -1,0 +1,16 @@
+missed_aspect,predicted_instead,sentences
+character_operator_balance,content_progression,6
+level_difficulty_balance,content_progression,3
+content_progression,performance_stability,3
+content_progression,level_difficulty_balance,3
+performance_stability,content_progression,3
+paywall,monetization_value,2
+level_difficulty_balance,character_operator_balance,2
+paywall,gacha_rates,2
+performance_stability,monetization_value,2
+matchmaking,content_progression,2
+matchmaking,level_difficulty_balance,2
+gacha_rates,monetization_value,2
+gacha_rates,paywall,2
+grind_progression,performance_stability,2
+advertisement,account_support,1

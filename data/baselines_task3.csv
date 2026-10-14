@@ -1,0 +1,6 @@
+model,n_pairs,macro_f1_3class,macro_f1_neg_vs_rest,accuracy
+Predict 'negative' for everything,757,0.275,0.413,0.704
+Rule: small project word list + negation,757,0.277,0.385,0.252
+Rule: Hu & Liu opinion lexicon + negation,757,0.461,0.609,0.542
+TF-IDF + logistic regression (cross-validated),757,0.545,0.747,0.766
+BERT (cross-validated),757,0.566,0.801,0.822

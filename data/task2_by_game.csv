@@ -1,0 +1,6 @@
+game,n_sentences,n_gold_aspect_labels,macro_f1 (aspects with gold labels),micro_f1
+royalmatch,100,80,0.789,0.793
+genshin,100,92,0.694,0.65
+mlbb,100,85,0.583,0.698
+pubgm,100,63,0.546,0.592
+arknights,100,112,0.58,0.661

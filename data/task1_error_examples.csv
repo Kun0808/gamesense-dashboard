@@ -1,0 +1,31 @@
+error_type,game,stars,weak_label,model_label,p_model,review_text,markers
+"labelled negative (1-2 stars), model says positive",genshin,1,negative,positive,0.961,One of the best games ive ever played.,
+"labelled negative (1-2 stars), model says positive",pubgm,1,negative,positive,0.96,This game outstanding and enjoying her person,
+"labelled negative (1-2 stars), model says positive",pubgm,1,negative,positive,0.96,pubg is the one of my favourite game I love you pubg mobile,
+"labelled negative (1-2 stars), model says positive",pubgm,2,negative,positive,0.958,welcome my pubg mobile,short (<=5 words)
+"labelled negative (1-2 stars), model says positive",mlbb,1,negative,positive,0.958,"This game is extremely fun and very entertaining anytime, best played with family members.",
+"labelled negative (1-2 stars), model says positive",royalmatch,1,negative,positive,0.958,l so much love this game with all my heart... it's gives me joy playing it,
+"labelled negative (1-2 stars), model says positive",mlbb,2,negative,positive,0.957,Every day I play this game Then I am sleep better. I love this game🫀🫀🫀🫀❤️❤️❤️❤️🧡,emoji or non-ASCII symbol
+"labelled negative (1-2 stars), model says positive",royalmatch,2,negative,positive,0.956,I joy the game he kept me busy I love it perfect,
+"labelled negative (1-2 stars), model says positive",pubgm,1,negative,positive,0.956,"I love this app and is amazing thank you,",
+"labelled negative (1-2 stars), model says positive",pubgm,1,negative,positive,0.954,dis is ha best game dis game is my lipe,
+"labelled positive (4-5 stars), model says negative",pubgm,4,positive,negative,0.945,very bad game,short (<=5 words)
+"labelled positive (4-5 stars), model says negative",mlbb,5,positive,negative,0.944,they ruined argus in this update.,
+"labelled positive (4-5 stars), model says negative",pubgm,5,positive,negative,0.942,this is very bad game,short (<=5 words)
+"labelled positive (4-5 stars), model says negative",mlbb,5,positive,negative,0.941,The matchmaking is very bad.!!!,short (<=5 words)
+"labelled positive (4-5 stars), model says negative",genshin,5,positive,negative,0.938,WHY DOES IT TAKE SO LONG TO UPDATE PLUS FIX YOUR UNREASONABLE USE OF DATA! 1 star worst game ever,ALL-CAPS word
+"labelled positive (4-5 stars), model says negative",pubgm,5,positive,negative,0.937,if this game disturb Islam and Muslim All Muslim will leave and delete this game .... 💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓💓jjjjjjjj,emoji or non-ASCII symbol
+"labelled positive (4-5 stars), model says negative",pubgm,5,positive,negative,0.934,very money waste game u just waste money to buy skins.,
+"labelled positive (4-5 stars), model says negative",pubgm,5,positive,negative,0.93,This is bad game of my life,
+"labelled positive (4-5 stars), model says negative",arknights,5,positive,negative,0.929,they deleted my account after several years. don't play this. edit: they recovered it after I emailed support.,negation
+"labelled positive (4-5 stars), model says negative",mlbb,5,positive,negative,0.918,idk how many times I've rage quit and uninstall this game only to install It again the very next day. this game will make you match up with the worst teammates you ever seen. you even start questioning how these people made it past epic like seriously HOW DID THEY MAKE IT THAT FAR? oh also if you do,contrast word (but/however/although); negation; question mark; ALL-CAPS word; long (>=30 words)
+"labelled neutral (3 stars), model says positive/negative",royalmatch,3,neutral,positive,0.962,This game is the real deal. I love love.,
+"labelled neutral (3 stars), model says positive/negative",royalmatch,3,neutral,positive,0.956,My favorite game so far. it takes my time and I can't stop either. it's sad when you are out of lives but it's consistent that can bring back the lives. I recommend you play,contrast word (but/however/although); negation; long (>=30 words)
+"labelled neutral (3 stars), model says positive/negative",pubgm,3,neutral,positive,0.956,"PUBG MOBILE is one of the best battle royale games on mobile! 🔥 The graphics are amazing, the gunplay feels great, and playing with friends makes it even more fun. There are so many maps and modes that I never get bored. Definitely worth playing! 🎮",negation; emoji or non-ASCII symbol; ALL-CAPS word; long (>=30 words)
+"labelled neutral (3 stars), model says positive/negative",pubgm,3,neutral,positive,0.954,pubg is my favorite game,short (<=5 words)
+"labelled neutral (3 stars), model says positive/negative",pubgm,3,neutral,positive,0.954,my favourite game,short (<=5 words)
+"labelled neutral (3 stars), model says positive/negative",mlbb,3,neutral,positive,0.954,I enjoyed playing the game very much.,
+"labelled neutral (3 stars), model says positive/negative",pubgm,3,neutral,positive,0.952,Nice game I love it so much,
+"labelled neutral (3 stars), model says positive/negative",mlbb,3,neutral,positive,0.949,it's fun to play mlbb😁😄,emoji or non-ASCII symbol; short (<=5 words)
+"labelled neutral (3 stars), model says positive/negative",pubgm,3,neutral,positive,0.948,Pubg is the most popular game and I enjoy the game weather games,
+"labelled neutral (3 stars), model says positive/negative",royalmatch,3,neutral,positive,0.946,it's good and protect our brain🧠,emoji or non-ASCII symbol

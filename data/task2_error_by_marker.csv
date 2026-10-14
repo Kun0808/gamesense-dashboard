@@ -1,0 +1,8 @@
+marker,n_with_marker,sentence_error_with,n_without,sentence_error_without,note
+contrast word (but/however/although),83,0.554,417,0.393,
+negation,148,0.5,352,0.386,
+question mark,13,0.385,487,0.421,
+emoji or non-ASCII symbol,24,0.25,476,0.429,
+ALL-CAPS word,50,0.44,450,0.418,
+short (<=5 words),83,0.205,417,0.463,
+long (>=30 words),69,0.58,431,0.394,

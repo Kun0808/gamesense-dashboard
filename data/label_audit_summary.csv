@@ -1,0 +1,4 @@
+sample,n,your label differs from original,share differing,95% CI,of which 'not about aspect' or 'unsure',differs AND agrees with the model,"kappa (original vs yours, 3 classes)"
+most_confident_disagreement,30,14,0.467,"[0.30, 0.64]",1,9,0.25
+random,30,6,0.2,"[0.10, 0.37]",1,1,0.63
+all audited,60,20,0.333,"[0.23, 0.46]",2,10,0.45

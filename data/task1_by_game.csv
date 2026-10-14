@@ -1,0 +1,6 @@
+game,n,macro_f1,accuracy
+royalmatch,565,0.662,0.862
+genshin,1084,0.672,0.809
+mlbb,1332,0.676,0.878
+pubgm,1192,0.57,0.792
+arknights,924,0.656,0.795
