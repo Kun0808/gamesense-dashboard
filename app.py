@@ -1,0 +1,397 @@
+"""GameSense dashboard: issue prioritisation from mobile-game reviews (aspect-based sentiment analysis).
+
+Reads only pre-computed files in ./data (no model is run here).
+"""
+import json
+import re
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
+
+ROOT = Path(__file__).parent
+DATA = ROOT / "data"
+sys.path.insert(0, str(ROOT / "src"))
+try:
+    from aspect_taxonomy import ASPECT_TAXONOMY
+except Exception:                                     # the app still works without the taxonomy file
+    ASPECT_TAXONOMY = {}
+
+st.set_page_config(page_title="GameSense", page_icon="🎮", layout="wide")
+
+GAMES = {"royalmatch": "Royal Match", "genshin": "Genshin Impact", "mlbb": "Mobile Legends",
+         "pubgm": "PUBG Mobile", "arknights": "Arknights"}
+COMMON = ["performance_stability", "monetization_value", "advertisement", "level_difficulty_balance",
+          "content_progression", "paywall", "account_support"]
+BLUE, GOLD = "#2E5597", "#C9A227"
+ASPECT_NOTES = {
+    "advertisement": "Sentiment for this aspect was flagged in our validation check (the model may over-predict negative). Examples are taken from 1-2 star reviews only.",
+    "account_support": "Sentiment for this aspect was flagged in our validation check (the model may over-predict negative). Examples are taken from 1-2 star reviews only.",
+    "paywall": "Few labelled examples exist for this aspect, so its sentiment estimate is less reliable.",
+    "cheating": "Almost every labelled mention is a complaint, so the negative share is close to 100% and the ranking mostly reflects how often it is mentioned.",
+    "matchmaking": "Almost every labelled mention is a complaint, so the negative share is close to 100% and the ranking mostly reflects how often it is mentioned.",
+    "performance_stability": "Almost every labelled mention is a complaint, so the negative share is close to 100% and the ranking mostly reflects how often it is mentioned.",
+    "grind_progression": "Only a handful of labelled examples exist for this aspect, so treat its sentiment and ranking as indicative only. It is left out of the trend charts.",
+}
+
+
+# ------------------------------------------------------------------ helpers
+def aspect_label(a):
+    lab = ASPECT_TAXONOMY.get(a, {}).get("label") if isinstance(ASPECT_TAXONOMY, dict) else None
+    lab = (lab or str(a).replace("_", " ")).strip()
+    return lab[:1].upper() + lab[1:]
+
+
+@st.cache_data(show_spinner=False)
+def read_csv(name, **kw):
+    p = DATA / name
+    return pd.read_csv(p, **kw) if p.exists() else None
+
+
+@st.cache_data(show_spinner="Loading data...")
+def read_parquet(name):
+    p = DATA / name
+    return pd.read_parquet(p) if p.exists() else None
+
+
+@st.cache_data(show_spinner=False)
+def read_manifest():
+    p = DATA / "run_manifest.json"
+    return json.loads(p.read_text()) if p.exists() else {}
+
+
+def missing(name):
+    st.warning(f"`data/{name}` was not found in the repository, so this section cannot be shown.")
+
+
+def parse_ci(s):
+    m = re.findall(r"-?\d+\.?\d*", str(s))
+    return (float(m[0]), float(m[1])) if len(m) >= 2 else (np.nan, np.nan)
+
+
+def game_name(g):
+    return GAMES.get(g, g)
+
+
+# ------------------------------------------------------------------ page 1
+def page_priority():
+    st.title("Issue priority")
+    st.caption("Which problems should a game team fix first? Priority = negative mentions per 100 review sentences "
+               "(how often an aspect is mentioned × how often it is mentioned negatively).")
+    ip = read_csv("issue_priority_by_game.csv")
+    if ip is None:
+        return missing("issue_priority_by_game.csv")
+    c1, c2 = st.columns(2)
+    game = c1.selectbox("Game", list(GAMES), format_func=game_name)
+    basis = c2.radio("Priority is based on", ["All reviews", "1-2 star reviews only"], horizontal=True)
+    col = "priority_neg_per100" if basis == "All reviews" else "priority_1to2"
+    d = ip[ip["game"] == game].copy()
+    if col not in d.columns or d[col].dropna().empty:
+        st.info("This view is not available for the selected game.")
+        return
+    d["Aspect"] = d["aspect"].map(aspect_label)
+    d = d.dropna(subset=[col]).sort_values(col, ascending=False)
+    top = d.iloc[0]
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Top issue", top["Aspect"])
+    m2.metric("Negative mentions per 100 sentences", f"{top[col]:.1f}")
+    m3.metric("Review sentences analysed", f"{int(top['n_sentences']):,}")
+
+    err = (d["neg_share_sd_seeds"].fillna(0) * d["mentions_per100"]) if (col == "priority_neg_per100" and "neg_share_sd_seeds" in d) else None
+    plot = d.sort_values(col).assign(err=None if err is None else err.reindex(d.sort_values(col).index))
+    fig = px.bar(plot, x=col, y="Aspect", orientation="h", color="reliability",
+                 color_discrete_map={"ok": BLUE, "check": GOLD}, error_x="err" if err is not None else None,
+                 labels={col: "Negative mentions per 100 sentences", "reliability": "Reliability"})
+    fig.update_layout(height=max(320, 42 * len(plot) + 130), yaxis_title="", legend_title_text="Reliability check")
+    st.plotly_chart(fig)
+    st.caption("Blue = no reliability concern recorded. Gold = check the notes in the table before relying on this aspect. "
+               "Error bars (all-reviews view) show how much the value moved across five ensemble runs.")
+
+    t = pd.DataFrame({
+        "Rank": d["rank"].astype(int) if basis == "All reviews" else range(1, len(d) + 1),
+        "Aspect": d["Aspect"],
+        "Negative mentions /100 sentences": d[col].round(2),
+        "Mentions /100 sentences": d["mentions_per100"].round(2),
+        "Negative share": (100 * d["neg_share"]).round(0).astype(int).astype(str) + "%",
+        "Rank range across runs": d["rank_min_seeds"].astype("Int64").astype(str) + "-" + d["rank_max_seeds"].astype("Int64").astype(str)
+        if "rank_min_seeds" in d else "",
+        "Reliability": d["reliability"],
+        "Notes": d["reliability_notes"].fillna(""),
+    })
+    st.dataframe(t, hide_index=True)
+    with st.expander("How to read this page"):
+        st.markdown(
+            "- **Priority** combines frequency and negativity, so a rarely mentioned but always-negative aspect can rank below a frequently mentioned, mostly-negative one.\n"
+            "- **Rank range across runs** shows the best and worst rank the aspect received over five model runs with different random seeds; a narrow range means the ranking is stable.\n"
+            "- **1-2 star view** is a stricter check: it only counts mentions that appear in low-rated reviews.\n"
+            "- Aspects marked *check* have a recorded reliability concern (see the Method & reliability page).")
+
+
+# ------------------------------------------------------------------ page 2
+def page_trends():
+    st.title("Trends over time")
+    tr = read_csv("trend.csv", parse_dates=["window_start"])
+    if tr is None:
+        return missing("trend.csv")
+    c1, c2, c3 = st.columns(3)
+    game = c1.selectbox("Game", list(GAMES), format_func=game_name)
+    scope = c2.radio("Markets", ["all", "us"], format_func=lambda s: "All markets" if s == "all" else "US only", horizontal=True)
+    metric = c3.selectbox("Metric", ["negative_per100", "mentions_per100"],
+                          format_func=lambda m: "Negative mentions per 100 sentences" if m == "negative_per100" else "All mentions per 100 sentences")
+    d = tr[(tr["game"] == game) & (tr["market_scope"] == scope)].copy()
+    if d.empty:
+        st.info("No trend data for this selection.")
+        return
+    order = d.groupby("aspect")["negative_mentions"].sum().sort_values(ascending=False).index.tolist()
+    chosen = st.multiselect("Aspects", order, default=order[:3], format_func=aspect_label)
+    if not chosen:
+        st.info("Select at least one aspect.")
+        return
+    d = d[d["aspect"].isin(chosen)].sort_values("window_start")
+    d["Aspect"] = d["aspect"].map(aspect_label)
+    fig = px.line(d, x="window_start", y=metric, color="Aspect", markers=True,
+                  labels={"window_start": "Window start", metric: "per 100 sentences"})
+    weak = d[~d["reliable_window"].astype(bool)].dropna(subset=[metric])
+    if not weak.empty:
+        fig.add_trace(go.Scatter(x=weak["window_start"], y=weak[metric], mode="markers", name="Window with <100 reviews",
+                                 marker=dict(symbol="x", size=11, color="black")))
+    fig.update_layout(height=460, legend_title_text="")
+    st.plotly_chart(fig)
+    wd = int(d["window_days"].iloc[0])
+    st.caption(f"Each point is a {wd}-day window. Black crosses mark windows with fewer than 100 reviews: treat those with caution. "
+               "Rates are per 100 review sentences so that busy and quiet periods are comparable.")
+    if scope == "all":
+        st.info("Non-US reviews are concentrated in the most recent weeks for some games, which can shift the mix of reviewers. "
+                "Switch to *US only* to check whether a change is just a market-mix effect.")
+    with st.expander("Window sizes"):
+        st.dataframe(d[["Aspect", "window_start", "n_reviews", "n_sentences", "mentions", "negative_mentions"]]
+                     .rename(columns={"window_start": "Window start", "n_reviews": "Reviews", "n_sentences": "Sentences",
+                                      "mentions": "Mentions", "negative_mentions": "Negative mentions"}), hide_index=True)
+
+
+# ------------------------------------------------------------------ page 3
+def page_cross():
+    st.title("Cross-game comparison")
+    st.caption("Only the seven aspects shared by all five games are compared here. Genre-specific aspects "
+               "(gacha rates, matchmaking, cheating, grind...) are shown only on the per-game pages.")
+    cg, cs = read_csv("cross_game_common_priority.csv", index_col=0), read_csv("cross_game_common_neg_share.csv", index_col=0)
+    if cg is None:
+        return missing("cross_game_common_priority.csv")
+
+    def prep(df):
+        df = df.rename(columns=game_name)
+        df.index = [aspect_label(a) for a in df.index]
+        return df
+    tab1, tab2 = st.tabs(["Negative mentions per 100 sentences", "Negative share of mentions"])
+    with tab1:
+        p = prep(cg)
+        st.plotly_chart(px.imshow(p, text_auto=".1f", aspect="auto", color_continuous_scale="Blues",
+                                  labels=dict(color="per 100 sentences")))
+        st.dataframe(p.round(2))
+    with tab2:
+        if cs is None:
+            missing("cross_game_common_neg_share.csv")
+        else:
+            p = prep(cs)
+            st.plotly_chart(px.imshow(p, text_auto=".2f", aspect="auto", color_continuous_scale="Oranges",
+                                      labels=dict(color="share negative")))
+            st.caption("Share of an aspect's mentions that are negative. It does not account for how often the aspect is mentioned, "
+                       "so read it together with the priority view.")
+    st.info("Games differ in reviewer mix and markets, so compare patterns rather than treating small differences as meaningful.")
+
+
+# ------------------------------------------------------------------ page 4
+def page_explorer():
+    st.title("Review explorer")
+    st.caption("Look at the actual sentences behind the numbers.")
+    pairs, ex = read_parquet("pairs.parquet"), read_parquet("examples.parquet")
+    if pairs is None or ex is None:
+        return missing("pairs.parquet / examples.parquet")
+    mode = st.radio("Show", ["Representative negative examples", "Browse all matching sentences"], horizontal=True)
+    base = ex.copy() if mode.startswith("Representative") else pairs.copy()
+    c1, c2, c3 = st.columns(3)
+    game = c1.selectbox("Game", ["All games"] + list(GAMES), format_func=lambda g: g if g == "All games" else game_name(g))
+    aspects = sorted(base["aspect"].dropna().unique())
+    asp = c2.selectbox("Aspect", ["All aspects"] + aspects, format_func=lambda a: a if a == "All aspects" else aspect_label(a))
+    market = c3.radio("Markets", ["All", "US only"], horizontal=True)
+    c4, c5 = st.columns(2)
+    stars = c4.multiselect("Star rating", [1, 2, 3, 4, 5], default=[1, 2, 3, 4, 5])
+    if mode.startswith("Browse"):
+        sent = c5.multiselect("Sentiment", ["negative", "neutral", "positive"], default=["negative"])
+    else:
+        sent = ["negative"]
+    text = st.text_input("Sentence contains (optional)")
+    at = pd.to_datetime(base["at"], errors="coerce")
+    if at.notna().any():
+        lo, hi = at.min().date(), at.max().date()
+        dr = st.date_input("Review date", value=(lo, hi), min_value=lo, max_value=hi)
+        dr = dr if isinstance(dr, (tuple, list)) and len(dr) == 2 else (lo, hi)
+    else:
+        dr = None
+
+    d = base
+    if game != "All games":
+        d = d[d["game"] == game]
+    if asp != "All aspects":
+        d = d[d["aspect"] == asp]
+    if market == "US only":
+        d = d[d["market"] == "us"]
+    d = d[d["stars"].isin(stars)] if stars else d.iloc[0:0]
+    if "sentiment" in d.columns:
+        d = d[d["sentiment"].isin(sent)]
+    if text.strip():
+        d = d[d["sentence_text"].fillna("").str.contains(text.strip(), case=False, regex=False)]
+    if dr is not None:
+        a = pd.to_datetime(d["at"], errors="coerce")
+        d = d[(a >= pd.Timestamp(dr[0])) & (a < pd.Timestamp(dr[1]) + pd.Timedelta(days=1))]
+    if asp in ASPECT_NOTES:
+        st.warning(ASPECT_NOTES[asp])
+
+    sort_col = "rank_score" if mode.startswith("Representative") else ("p_negative" if "negative" in sent else "p_aspect")
+    d = d.sort_values(sort_col, ascending=False)
+    st.markdown(f"**{len(d):,}** matching sentences")
+    if d.empty:
+        return
+    n = st.slider("How many to show", 10, 500, 100, step=10)
+    show = d.head(n)
+    out = pd.DataFrame({
+        "Game": show["game"].map(game_name), "Aspect": show["aspect"].map(aspect_label), "Sentence": show["sentence_text"],
+        "Stars": show["stars"], "P(negative)": show["p_negative"].round(2),
+        "Run-to-run spread": show["p_negative_seed_std"].round(2), "Version": show["version"], "Date": pd.to_datetime(show["at"]).dt.date})
+    st.dataframe(out, hide_index=True)
+    st.download_button("Download the shown rows (CSV)", out.to_csv(index=False).encode("utf-8"), file_name="gamesense_sentences.csv", mime="text/csv")
+    if mode.startswith("Representative"):
+        st.caption("Representative examples are negative sentences with high aspect and sentiment confidence that stayed negative across all five model runs.")
+
+
+# ------------------------------------------------------------------ page 5
+def page_version():
+    st.title("Version analysis")
+    st.warning("Descriptive only. These comparisons show what changed around an app update, not what the update caused: "
+               "other things (events, seasons, who is reviewing) change at the same time.")
+    vs, va, bs = read_csv("version_windows_and_stars.csv"), read_csv("version_aspect_changes.csv"), read_csv("version_boundary_sensitivity.csv")
+    if vs is None:
+        return missing("version_windows_and_stars.csv")
+    show = vs.copy()
+    show["game"] = show["game"].map(game_name)
+    st.subheader("14-day windows before and after each update")
+    st.dataframe(show.rename(columns={"game": "Game", "version": "Version", "first_seen": "First seen", "n_pre": "Reviews before", "n_post": "Reviews after",
+                                      "post_share_on_new_version": "Share on new version (after)", "usable(>=100 each)": "Enough reviews (>=100 each)",
+                                      "stars_pre": "Stars before", "stars_post": "Stars after", "stars_delta": "Change", "stars_delta_95CI": "95% interval",
+                                      "CI_excludes_0": "Interval excludes 0"}), hide_index=True)
+    st.caption("When the interval includes 0 the change is not distinguishable from noise. Only part of the reviews after an update come from the new version.")
+
+    if bs is not None and not bs.empty:
+        st.subheader("Does the result depend on where the window starts?")
+        trans = sorted(bs["transition"].unique())
+        c1, c2 = st.columns(2)
+        sel = c1.selectbox("Update", trans)
+        sub = c2.radio("Markets", sorted(bs["subset"].unique()), horizontal=True)
+        d = bs[(bs["transition"] == sel) & (bs["subset"] == sub)].copy()
+        ci = d["delta_95CI"].map(parse_ci)
+        d["lo"], d["hi"] = [c[0] for c in ci], [c[1] for c in ci]
+        fig = go.Figure(go.Scatter(x=d["stars_delta"], y=d["window_anchor"], mode="markers", marker=dict(size=10, color=BLUE),
+                                   error_x=dict(type="data", symmetric=False, array=(d["hi"] - d["stars_delta"]).tolist(),
+                                                arrayminus=(d["stars_delta"] - d["lo"]).tolist())))
+        fig.add_vline(x=0, line_dash="dash", line_color="grey")
+        fig.update_layout(height=340, xaxis_title="Change in average stars (after - before)", yaxis_title="Window start")
+        st.plotly_chart(fig)
+        if not d.empty:
+            k = int(d["CI_excludes_0"].astype(bool).sum())
+            st.markdown(f"Across **{len(d)}** window choices, the star change ranges from **{d['stars_delta'].min():+.2f}** to "
+                        f"**{d['stars_delta'].max():+.2f}**; the interval excludes 0 in **{k}** of {len(d)}.")
+            if 0 < k < len(d):
+                st.info("The conclusion changes with the window choice, so report it as sensitive to where the window starts.")
+
+    if va is not None and not va.empty:
+        st.subheader("Which aspects changed?")
+        va = va.copy()
+        va["transition"] = va["game"].astype(str) + " " + va["version"].astype(str)
+        sel2 = st.selectbox("Update (aspect view)", sorted(va["transition"].unique()))
+        d = va[va["transition"] == sel2].copy()
+        ci = d["delta_95CI"].map(parse_ci)
+        d["lo"], d["hi"] = [c[0] for c in ci], [c[1] for c in ci]
+        d["Aspect"] = d["aspect"].map(aspect_label)
+        fig = go.Figure(go.Bar(x=d["delta"], y=d["Aspect"], orientation="h",
+                               marker_color=np.where(d["CI_excludes_0"].astype(bool), BLUE, "#B0B7C3"),
+                               error_x=dict(type="data", symmetric=False, array=(d["hi"] - d["delta"]).tolist(), arrayminus=(d["delta"] - d["lo"]).tolist())))
+        fig.add_vline(x=0, line_dash="dash", line_color="grey")
+        fig.update_layout(height=max(300, 55 * len(d) + 120), xaxis_title="Change in reviews with a negative mention (per 100 reviews)", yaxis_title="")
+        st.plotly_chart(fig)
+        st.caption("Blue bars: interval excludes 0. Grey: not distinguishable from no change. Several aspects are compared at once, "
+                   "so a few intervals can exclude 0 by chance alone.")
+        if d["caution"].fillna("").ne("").any():
+            st.warning("Aspects marked with a sentiment-reliability concern: " + ", ".join(d.loc[d["caution"].fillna("") != "", "Aspect"]) + ".")
+
+
+# ------------------------------------------------------------------ page 6
+def page_method():
+    st.title("Method and reliability")
+    st.markdown("**Pipeline.** Google Play reviews → sentence split → **Task 2** aspect detection (12 aspects, multi-label BERT) → "
+                "**Task 3** aspect-level sentiment (BERT on sentence + aspect) → issue priority = negative mentions per 100 sentences. "
+                "Task 1 (overall review sentiment) is trained on star-derived labels.")
+    t_chk, t3, t2, t_mk, t_lim = st.tabs(["Targets vs results", "Aspect sentiment (Task 3)", "Aspect detection (Task 2)", "Data and markets", "Limitations"])
+    with t_chk:
+        df = read_csv("proposal_check.csv")
+        if df is not None:
+            st.dataframe(df, hide_index=True)
+        else:
+            missing("proposal_check.csv")
+        st.caption("The numeric targets in the project proposal were set as directional goals before piloting.")
+    with t3:
+        o, a = read_csv("task3_overall.csv"), read_csv("task3_by_aspect.csv")
+        if o is not None:
+            st.markdown("**Overall (5-fold cross-validation, grouped by review)**")
+            st.dataframe(o, hide_index=True)
+        if a is not None:
+            st.markdown("**By aspect.** Compare *acc_negVsRest_BERT* with *acc_if_all_negative*: where they are close, the model adds little beyond "
+                        "predicting 'negative' for everything.")
+            st.dataframe(a, hide_index=True)
+        st.caption("The neutral class has very few labelled examples and is rarely predicted correctly, so negative-vs-rest is the more meaningful measure.")
+        cm = DATA.parent / "docs" / "figures" / "task3_confusion.png"
+        if cm.exists():
+            st.image(str(cm), caption="Task 3 confusion matrix (out-of-fold)", width=420)
+    with t2:
+        o, a = read_csv("task2_overall.csv"), read_csv("task2_by_aspect.csv")
+        if o is not None:
+            st.dataframe(o, hide_index=True)
+        if a is not None:
+            st.dataframe(a, hide_index=True)
+    with t_mk:
+        m, n = read_csv("market_composition.csv"), read_csv("nonUS_share_by_window.csv")
+        if m is not None:
+            st.markdown("**Reviews by game and market**")
+            st.dataframe(m, hide_index=True)
+        if n is not None and not n.empty:
+            n = n.copy(); n["game"] = n["game"].map(game_name)
+            st.markdown("**Share of non-US reviews per window (games with any)**")
+            fig = px.line(n, x="window_start", y="nonUS_%", color="game", markers=True, labels={"window_start": "Window start", "nonUS_%": "Non-US share (%)"})
+            fig.update_layout(height=340)
+            st.plotly_chart(fig)
+    with t_lim:
+        st.markdown(
+            "- **Small labelled set.** Aspect sentiment was trained on a few hundred labelled sentence-aspect pairs, so rare aspects have very little evidence.\n"
+            "- **Neutral sentiment** is rarely predicted correctly; headline results use negative-vs-rest.\n"
+            "- **Complaint-dominated aspects** (performance, matchmaking, cheating) are almost always negative, so their ranking mainly reflects how often they are mentioned.\n"
+            "- **Flagged aspects.** Advertisement and account support sentiment may be over-predicted as negative; paywall has few labelled examples.\n"
+            "- **Overall review sentiment** is evaluated against star-derived labels, which are a noisy proxy for what reviewers mean.\n"
+            "- **Reviewer mix.** Reviews come from several Play Store markets, and non-US reviews are concentrated in later weeks for some games.\n"
+            "- **Version analysis** is descriptive, depends on where the window starts, and cannot establish that an update caused a change.\n"
+            "- **Self-selected sample.** Reviewers are not representative of all players.")
+
+
+# ------------------------------------------------------------------ main
+PAGES = {"Issue priority": page_priority, "Trends": page_trends, "Cross-game comparison": page_cross,
+         "Review explorer": page_explorer, "Version analysis": page_version, "Method & reliability": page_method}
+st.sidebar.title("🎮 GameSense")
+st.sidebar.caption("Aspect-based sentiment analysis of mobile-game reviews")
+page = st.sidebar.radio("Page", list(PAGES))
+PAGES[page]()
+man = read_manifest()
+if man:
+    st.sidebar.divider()
+    st.sidebar.caption(f"Results built: {str(man.get('timestamp_utc', ''))[:10]}  \nModel: {man.get('model', '')}")
