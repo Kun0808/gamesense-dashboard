@@ -28,6 +28,7 @@ GAMES = {"royalmatch": "Royal Match", "genshin": "Genshin Impact", "mlbb": "Mobi
 COMMON = ["performance_stability", "monetization_value", "advertisement", "level_difficulty_balance",
           "content_progression", "paywall", "account_support"]
 BLUE, GOLD = "#2E5597", "#C9A227"
+SENT_COLORS = {"negative": "#C0504D", "neutral": "#9AA5B1", "positive": "#4E9F6B"}
 ASPECT_NOTES = {
     "advertisement": "Sentiment for this aspect was flagged in our validation check (the model may over-predict negative). Examples are taken from 1-2 star reviews only.",
     "account_support": "Sentiment for this aspect was flagged in our validation check (the model may over-predict negative). Examples are taken from 1-2 star reviews only.",
@@ -75,6 +76,134 @@ def parse_ci(s):
 
 def game_name(g):
     return GAMES.get(g, g)
+
+
+def norm_sentiment(series):
+    """Overall sentiment may be stored as text or as 0/1/2; return negative / neutral / positive."""
+    t = series.astype(str).str.strip().str.lower()
+    return t.replace({"0": "negative", "0.0": "negative", "1": "neutral", "1.0": "neutral", "2": "positive", "2.0": "positive"})
+
+
+def show_table(name, title, caption=None, expanded=False):
+    """Show an optional CSV from data/ if it exists."""
+    df = read_csv(name)
+    if df is None:
+        return False
+    if str(df.columns[0]).startswith("Unnamed"):
+        df = df.rename(columns={df.columns[0]: " "})
+    with st.expander(title, expanded=expanded):
+        st.dataframe(df, hide_index=True)
+        if caption:
+            st.caption(caption)
+    return True
+
+
+# ------------------------------------------------------------------ overview
+def page_overview():
+    st.title("GameSense")
+    st.markdown("Which problems should a mobile-game team fix first? GameSense reads Google Play reviews of five games, finds which aspects "
+                "players talk about (performance, ads, monetisation, matchmaking, ...), decides whether each mention is negative, "
+                "and ranks aspects by **negative mentions per 100 review sentences**. Start here for the big picture, "
+                "then open *Issue priority* in the sidebar.")
+    meta = read_parquet("reviews_meta.parquet")
+    if meta is None:
+        return missing("reviews_meta.parquet")
+    market = st.radio("Markets", ["All", "US only"], horizontal=True)
+    m = meta if market == "All" else meta[meta["market"] == "us"]
+    m = m.copy()
+    m["Game"] = m["game"].map(game_name)
+    m["at"] = pd.to_datetime(m["at"], errors="coerce")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Reviews", f"{len(m):,}")
+    c2.metric("Review sentences", f"{int(m['n_sentences'].sum()):,}")
+    c3.metric("Average stars", f"{m['score'].mean():.2f}")
+    if m["at"].notna().any():
+        c4.metric("Reviews dated", f"{m['at'].min():%b %Y} - {m['at'].max():%b %Y}")
+    t_vol, t_rate, t_sent, t_time = st.tabs(["Review volume", "Star ratings", "Overall sentiment", "Over time"])
+    with t_vol:
+        v = m.groupby("Game").agg(Reviews=("reviewId", "size"), Sentences=("n_sentences", "sum")).reset_index()
+        st.plotly_chart(px.bar(v, x="Game", y="Reviews", text="Reviews", color_discrete_sequence=[BLUE]))
+        st.dataframe(v, hide_index=True)
+        st.caption("Games differ in how many usable English reviews were collected, so compare rates, not raw counts.")
+    with t_rate:
+        r = m.dropna(subset=["score"]).groupby(["Game", "score"]).size().reset_index(name="n")
+        r["Share"] = 100 * r["n"] / r.groupby("Game")["n"].transform("sum")
+        r["Stars"] = r["score"].astype(int).astype(str)
+        fig = px.bar(r, x="Game", y="Share", color="Stars", category_orders={"Stars": ["1", "2", "3", "4", "5"]},
+                     labels={"Share": "% of reviews"}, color_discrete_sequence=px.colors.sequential.Blues)
+        st.plotly_chart(fig)
+        st.dataframe(m.groupby("Game")["score"].agg(["mean", "count"]).round(2).rename(columns={"mean": "Average stars", "count": "Reviews"}))
+    with t_sent:
+        if m["overall"].notna().any():
+            o = m.dropna(subset=["overall"]).copy()
+            o["Sentiment"] = norm_sentiment(o["overall"])
+            share = o.groupby(["Game", "Sentiment"]).size().reset_index(name="n")
+            share["Share"] = 100 * share["n"] / share.groupby("Game")["n"].transform("sum")
+            fig = px.bar(share, x="Game", y="Share", color="Sentiment", color_discrete_map=SENT_COLORS,
+                         category_orders={"Sentiment": ["negative", "neutral", "positive"]}, labels={"Share": "% of reviews"})
+            st.plotly_chart(fig)
+            st.caption("Overall review sentiment as predicted by the review-level model, which was trained on labels derived from star ratings. "
+                       "The neutral class (3-star reviews) is the least reliable.")
+        else:
+            st.info("Overall sentiment is not available in the data.")
+    with t_time:
+        if m["at"].notna().any():
+            w = m.dropna(subset=["at"]).groupby(["Game", pd.Grouper(key="at", freq="W")]).size().reset_index(name="Reviews")
+            st.plotly_chart(px.line(w, x="at", y="Reviews", color="Game", labels={"at": "Week"}))
+            st.caption("Each game was collected over a different period, so the date ranges are not the same.")
+    with st.expander("What is on the other pages?"):
+        st.markdown("- **Issue priority**: ranked problems for one game.\n- **Aspect sentiment**: how negative, neutral and positive mentions split for each aspect.\n"
+                    "- **Trends**: aspects over time.\n- **Cross-game comparison**: the seven shared aspects side by side.\n"
+                    "- **Review explorer**: the actual sentences, with filters.\n- **Version analysis**: before and after app updates.\n"
+                    "- **Method & reliability**: how it was built and where it is weak.")
+
+
+# ------------------------------------------------------------------ aspect sentiment
+def page_aspect_sentiment():
+    st.title("Aspect sentiment")
+    st.caption("For each aspect: of all sentences that mention it, how many are negative, neutral or positive?")
+    pairs = read_parquet("pairs.parquet")
+    if pairs is None:
+        return missing("pairs.parquet")
+    c1, c2, c3 = st.columns(3)
+    game = c1.selectbox("Game", list(GAMES), format_func=game_name)
+    market = c2.radio("Markets", ["All", "US only"], horizontal=True)
+    stars = c3.multiselect("Star rating", [1, 2, 3, 4, 5], default=[1, 2, 3, 4, 5])
+    d = pairs[pairs["game"] == game]
+    if market == "US only":
+        d = d[d["market"] == "us"]
+    d = d[d["stars"].isin(stars)] if stars else d.iloc[0:0]
+    if d.empty:
+        st.info("No sentences for this selection.")
+        return
+    min_n = st.slider("Only aspects with at least this many mentions", 1, 200, 20)
+    g = d.groupby(["aspect", "sentiment"]).size().unstack(fill_value=0).reindex(columns=["negative", "neutral", "positive"], fill_value=0)
+    g["mentions"] = g.sum(axis=1)
+    g = g[g["mentions"] >= min_n].sort_values("mentions", ascending=False)
+    if g.empty:
+        st.info("No aspect reaches that number of mentions; lower the threshold.")
+        return
+    long = g.reset_index().melt(id_vars=["aspect", "mentions"], value_vars=["negative", "neutral", "positive"], var_name="Sentiment", value_name="n")
+    long["Share"] = 100 * long["n"] / long["mentions"]
+    long["Aspect"] = long["aspect"].map(aspect_label)
+    order = [aspect_label(a) for a in g.index][::-1]
+    fig = px.bar(long, x="Share", y="Aspect", color="Sentiment", orientation="h", color_discrete_map=SENT_COLORS,
+                 category_orders={"Sentiment": ["negative", "neutral", "positive"], "Aspect": order},
+                 labels={"Share": "% of mentions"})
+    fig.update_layout(height=max(320, 42 * len(g) + 130), yaxis_title="")
+    st.plotly_chart(fig)
+    tab = g.copy()
+    tab.index = [aspect_label(a) for a in tab.index]
+    for c in ("negative", "neutral", "positive"):
+        tab[f"{c} %"] = (100 * tab[c] / tab["mentions"]).round(0).astype(int)
+    st.dataframe(tab[["mentions", "negative", "neutral", "positive", "negative %", "neutral %", "positive %"]])
+    st.caption("The neutral class has very few labelled examples, so neutral shares are the least reliable. "
+               "Aspects with few mentions give unstable percentages. Open *Review explorer* to read the sentences behind a bar.")
+    flagged = [a for a in g.index if a in ASPECT_NOTES]
+    if flagged:
+        with st.expander("Reliability notes for aspects shown here"):
+            for a in flagged:
+                st.markdown(f"**{aspect_label(a)}**: {ASPECT_NOTES[a]}")
 
 
 # ------------------------------------------------------------------ page 1
@@ -160,6 +289,13 @@ def page_trends():
         fig.add_trace(go.Scatter(x=weak["window_start"], y=weak[metric], mode="markers", name="Window with <100 reviews",
                                  marker=dict(symbol="x", size=11, color="black")))
     fig.update_layout(height=460, legend_title_text="")
+    vs_tbl = read_csv("version_windows_and_stars.csv")
+    if vs_tbl is not None and st.checkbox("Mark known app updates", value=False):
+        for _, r in vs_tbl[vs_tbl["game"] == game].iterrows():
+            x = pd.to_datetime(r["first_seen"], errors="coerce")
+            if pd.notna(x):
+                fig.add_shape(type="line", x0=x, x1=x, y0=0, y1=1, yref="paper", line=dict(color="grey", dash="dash"))
+                fig.add_annotation(x=x, y=1, yref="paper", text=f"v{r['version']}", showarrow=False, yanchor="bottom")
     st.plotly_chart(fig)
     wd = int(d["window_days"].iloc[0])
     st.caption(f"Each point is a {wd}-day window. Black crosses mark windows with fewer than 100 reviews: treat those with caution. "
@@ -218,10 +354,13 @@ def page_explorer():
     aspects = sorted(base["aspect"].dropna().unique())
     asp = c2.selectbox("Aspect", ["All aspects"] + aspects, format_func=lambda a: a if a == "All aspects" else aspect_label(a))
     market = c3.radio("Markets", ["All", "US only"], horizontal=True)
-    c4, c5 = st.columns(2)
+    vbase = base if game == "All games" else base[base["game"] == game]
+    versions = vbase["version"].dropna().astype(str).value_counts().head(40).index.tolist()
+    c4, c5, c6 = st.columns(3)
     stars = c4.multiselect("Star rating", [1, 2, 3, 4, 5], default=[1, 2, 3, 4, 5])
+    ver = c5.selectbox("App version", ["All versions"] + versions)
     if mode.startswith("Browse"):
-        sent = c5.multiselect("Sentiment", ["negative", "neutral", "positive"], default=["negative"])
+        sent = c6.multiselect("Sentiment", ["negative", "neutral", "positive"], default=["negative"])
     else:
         sent = ["negative"]
     text = st.text_input("Sentence contains (optional)")
@@ -240,6 +379,8 @@ def page_explorer():
         d = d[d["aspect"] == asp]
     if market == "US only":
         d = d[d["market"] == "us"]
+    if ver != "All versions":
+        d = d[d["version"].astype(str) == ver]
     d = d[d["stars"].isin(stars)] if stars else d.iloc[0:0]
     if "sentiment" in d.columns:
         d = d[d["sentiment"].isin(sent)]
@@ -334,7 +475,8 @@ def page_method():
     st.markdown("**Pipeline.** Google Play reviews → sentence split → **Task 2** aspect detection (12 aspects, multi-label BERT) → "
                 "**Task 3** aspect-level sentiment (BERT on sentence + aspect) → issue priority = negative mentions per 100 sentences. "
                 "Task 1 (overall review sentiment) is trained on star-derived labels.")
-    t_chk, t3, t2, t_mk, t_lim = st.tabs(["Targets vs results", "Aspect sentiment (Task 3)", "Aspect detection (Task 2)", "Data and markets", "Limitations"])
+    t_chk, t_base, t3, t2, t_err, t_mk, t_lim = st.tabs(["Targets vs results", "Baselines", "Aspect sentiment (Task 3)", "Aspect detection (Task 2)",
+                                                         "Error analysis", "Data and markets", "Limitations"])
     with t_chk:
         df = read_csv("proposal_check.csv")
         if df is not None:
@@ -342,6 +484,18 @@ def page_method():
         else:
             missing("proposal_check.csv")
         st.caption("The numeric targets in the project proposal were set as directional goals before piloting.")
+    with t_base:
+        st.caption("Simple non-deep-learning baselines, evaluated on the same labelled data. Sentence-level lexicons do not know which aspect "
+                   "a sentence is about, so they are weak for aspect sentiment by construction.")
+        shown = False
+        for name, title in [("baselines_task2.csv", "Task 2: aspect detection"), ("baselines_task3.csv", "Task 3: aspect sentiment")]:
+            df = read_csv(name)
+            if df is not None:
+                shown = True
+                st.markdown(f"**{title}**")
+                st.dataframe(df, hide_index=True)
+        if not shown:
+            st.info("Baseline tables are not in the repository yet.")
     with t3:
         o, a = read_csv("task3_overall.csv"), read_csv("task3_by_aspect.csv")
         if o is not None:
@@ -361,6 +515,35 @@ def page_method():
             st.dataframe(o, hide_index=True)
         if a is not None:
             st.dataframe(a, hide_index=True)
+    with t_err:
+        st.caption("Where and why the models go wrong. Language markers are simple rules (for example, a sentence containing 'but') used only to show "
+                   "where errors cluster; they do not prove the cause of an error.")
+        e1, e2, e3 = st.tabs(["Overall review sentiment (Task 1)", "Aspect detection (Task 2)", "Aspect sentiment (Task 3)"])
+        with e1:
+            found = [show_table("task1_overall.csv", "Per-class precision and recall", expanded=True),
+                     show_table("task1_confusion.csv", "Confusion matrix (rows: star-derived label, columns: model)"),
+                     show_table("task1_by_star.csv", "What the model predicts for each star rating",
+                                "3-star reviews carry the 'neutral' label; if they are spread across all three predictions, the neutral class is not well defined by stars."),
+                     show_table("task1_by_game.csv", "Performance by game"),
+                     show_table("task1_error_by_marker.csv", "Error rate with vs without each language marker"),
+                     show_table("task1_error_examples.csv", "Confidently wrong examples")]
+            if not any(found):
+                st.info("Task 1 error-analysis tables are not in the repository yet.")
+        with e2:
+            found = [show_table("task2_by_game.csv", "Performance by game", expanded=True),
+                     show_table("task2_by_aspect_all_models.csv", "Per aspect: keyword baseline vs TF-IDF vs BERT",
+                                "Aspects with few gold examples have unstable scores."),
+                     show_table("task2_confusable_aspects.csv", "Aspects that get mixed up",
+                                "In sentences with both a miss and a false alarm: which aspect was predicted instead of which was missed."),
+                     show_table("task2_error_by_marker.csv", "Share of sentences with a wrong aspect, with vs without each marker"),
+                     show_table("task2_error_examples.csv", "Most confident misses and false alarms")]
+            if not any(found):
+                st.info("Task 2 error-analysis tables are not in the repository yet.")
+        with e3:
+            found = [show_table("task3_error_by_marker.csv", "Error rate with vs without each language marker", expanded=True),
+                     show_table("task3_error_examples.csv", "Most confident missed complaints and false alarms")]
+            if not any(found):
+                st.info("Task 3 error-analysis tables are not in the repository yet.")
     with t_mk:
         m, n = read_csv("market_composition.csv"), read_csv("nonUS_share_by_window.csv")
         if m is not None:
@@ -385,7 +568,8 @@ def page_method():
 
 
 # ------------------------------------------------------------------ main
-PAGES = {"Issue priority": page_priority, "Trends": page_trends, "Cross-game comparison": page_cross,
+PAGES = {"Overview": page_overview, "Issue priority": page_priority, "Aspect sentiment": page_aspect_sentiment,
+         "Trends": page_trends, "Cross-game comparison": page_cross,
          "Review explorer": page_explorer, "Version analysis": page_version, "Method & reliability": page_method}
 st.sidebar.title("🎮 GameSense")
 st.sidebar.caption("Aspect-based sentiment analysis of mobile-game reviews")
