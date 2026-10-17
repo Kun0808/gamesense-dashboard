@@ -117,8 +117,12 @@ def page_overview():
     c1.metric("Reviews", f"{len(m):,}")
     c2.metric("Review sentences", f"{int(m['n_sentences'].sum()):,}")
     c3.metric("Average stars", f"{m['score'].mean():.2f}")
-    if m["at"].notna().any():
-        c4.metric("Reviews dated", f"{m['at'].min():%b %Y} - {m['at'].max():%b %Y}")
+    has_dates = bool(m["at"].notna().any())
+    if has_dates:
+        c4.metric("Latest review", f"{m['at'].max():%d %b %Y}")
+    span = f"; the selected reviews are dated {m['at'].min():%b %Y} to {m['at'].max():%d %b %Y}" if has_dates else ""
+    st.caption(f"This dashboard shows a fixed snapshot of Google Play reviews collected in August 2026{span}. "
+               "It does not update automatically and does not reflect later patches.")
     t_vol, t_rate, t_sent, t_time = st.tabs(["Review volume", "Star ratings", "Overall sentiment", "Over time"])
     with t_vol:
         v = m.groupby("Game").agg(Reviews=("reviewId", "size"), Sentences=("n_sentences", "sum")).reset_index()
@@ -605,6 +609,9 @@ def page_method():
             "- **Flagged aspects.** Advertisement and account support sentiment may be over-predicted as negative; paywall has few labelled examples.\n"
             "- **Overall review sentiment** is evaluated against star-derived labels, which are a noisy proxy for what reviewers mean.\n"
             "- **Reviewer mix.** Reviews come from several Play Store markets, and non-US reviews are concentrated in later weeks for some games.\n"
+            "- **Fixed snapshot.** All results describe reviews collected in August 2026; nothing was collected afterwards, so later patches are not reflected. "
+            "For four of the games the US reviews end in early August and the most recent weeks contain only non-US reviews.\n"
+            "- **Repeated texts.** About 4% of the reviews repeat the text of an earlier review (mostly short phrases from different users) and were kept; removing them changed the overall-sentiment score only slightly.\n"
             "- **Version analysis** is descriptive, depends on where the window starts, and cannot establish that an update caused a change.\n"
             "- **Self-selected sample.** Reviewers are not representative of all players.")
 

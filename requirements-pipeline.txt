@@ -1,0 +1,22 @@
+# Environment for the notebooks 02 to 09 (model training, evaluation and analysis).
+# Developed on Google Colab with Python 3.13. Versions marked "run" were recorded in outputs/final_v4/run_manifest.json
+# when the final results were produced; the others are the versions installed in Colab on 2026-10-15.
+# On Colab most of these are preinstalled; the notebooks only run `pip install -U transformers accelerate` (and spacy, ipywidgets where noted).
+
+torch==2.11.0              # run (Colab GPU build, CUDA 13.0); on other machines install the wheel that matches your hardware
+transformers==5.19.0       # run
+accelerate==1.15.0
+scikit-learn==1.6.1        # run
+pandas==2.2.3              # run
+numpy==2.1.3               # run
+scipy==1.16.3
+pyarrow==23.0.1
+spacy==3.8.16              # sentence splitting (blank English pipeline with the sentencizer)
+nltk==3.9.1                # Hu & Liu opinion lexicon (downloaded on first use)
+ipywidgets==7.7.1          # annotation and audit tools
+openpyxl==3.1.5            # Excel export and the blind audit sheet
+matplotlib==3.10.0
+
+# Not needed on Colab, needed to run the notebooks elsewhere:
+# jupyterlab
+# Data collection (stage 1) will add google-play-scraper once the collection method is documented.
