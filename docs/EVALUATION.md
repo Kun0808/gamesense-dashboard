@@ -4,6 +4,14 @@ The dashboard is evaluated at two levels: **offline** (are the numbers it shows 
 
 The evaluation is reproducible with `notebooks/11_dashboard_evaluation.ipynb`. The numbers below come from one run of that notebook against the published repository.
 
+## Run it yourself
+
+No Google Drive and no account is needed. Open the notebook in Google Colab and run the cells from top to bottom (about 2 minutes, CPU):
+
+[Open `11_dashboard_evaluation.ipynb` in Colab](https://colab.research.google.com/github/Kun0808/gamesense-dashboard/blob/main/notebooks/11_dashboard_evaluation.ipynb)
+
+The notebook clones this public repository, recomputes the numbers, tests the pages and requests the public dashboard link.
+
 ## Summary
 
 | Level | Question | Method | Result |
