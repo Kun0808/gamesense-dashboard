@@ -101,7 +101,8 @@ src/aspect_taxonomy.py       The 12 aspects: names, definitions, keywords
 notebooks/                   The analysis notebooks, numbered in run order (see notebooks/README.md)
 docs/DATA.md                 Data card
 docs/REPRODUCING.md          How to reproduce the results
-docs/figures/                Figures used in the report
+docs/EVALUATION.md          Evaluation of the published dashboard
+docs/figures/                Evaluation figures, the system architecture diagram and the script that draws the figures
 ```
 
 Model weights and the full review files (they contain user names) are not stored here because of their size and privacy.
