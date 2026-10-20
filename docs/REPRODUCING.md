@@ -63,6 +63,7 @@ Run order and inputs and outputs of every notebook are in `notebooks/README.md` 
 | 8 | `08_label_audit` | no | label-noise estimate |
 | 9 | `09_dashboard_data_export` | no | dashboard data and one zip with every generated file of this repository |
 | 10 | `10_data_release_export` | no | de-identified copy of the data for archiving (the data package) |
+| 11 | `11_dashboard_evaluation` | no | evaluation of the published dashboard (`docs/EVALUATION.md`) |
 
 ## 6. Level B: rebuild the results from the saved intermediate files
 
@@ -92,6 +93,8 @@ These are the numbers produced by the final run.
 | Agreement with the second annotator | Cohen's kappa about 0.74 overall |
 | Blind label audit, random sample of 30 pairs | 6 labels differ (20%), kappa 0.63, no negative/positive flips |
 | Top issue per game (negative mentions per 100 sentences) | Royal Match: advertisement; Mobile Legends: matchmaking; Genshin Impact: content progression; PUBG Mobile and Arknights: performance stability |
+
+Notebook 11 checks the published dashboard: 25 of 25 offline checks and 37 of 37 functional scenarios pass (details in `docs/EVALUATION.md`).
 
 Notebook 7 rebuilds the Task 1 test set and checks automatically that its macro-F1 equals the recorded 0.664. The full numbers are in `outputs/final_v4/GameSense_results_v4.xlsx` and `results_registry.json`, and a summary against the proposal's targets is in `data/proposal_check.csv`. If a retrained model gives slightly different values, compare against these within the variation described in section 1.
 

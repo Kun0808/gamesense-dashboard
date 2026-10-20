@@ -7,6 +7,7 @@
 GameSense reads Google Play reviews of five mobile games and answers one practical question for a game team: **which problems should we fix first?** It detects which gameplay aspects a review sentence talks about (performance, ads, monetisation, matchmaking, ...), decides whether each mention is negative, and ranks aspects by *negative mentions per 100 review sentences*.
 
 Course project, NUS-ISS Practical Language Processing (PLP), Group 5.
+Team: Bao Kun, Li Wen, [add the other members].
 
 ## What the dashboard shows
 

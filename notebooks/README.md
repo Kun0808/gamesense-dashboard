@@ -15,6 +15,7 @@ The notebooks are numbered in the order in which they are run; stage 1 (data col
 | 8 | `08_label_audit.ipynb` | Blind re-labelling of 60 pairs to estimate label noise | CPU, manual |
 | 9 | `09_dashboard_data_export.ipynb` | Build the dashboard data and export every generated repository file as one checked zip | CPU |
 | 10 | `10_data_release_export.ipynb` | Scan for personal-data patterns and export a de-identified copy of the data | CPU |
+| 11 | `11_dashboard_evaluation.ipynb` | Evaluate the published dashboard: recompute its numbers, test every page, check the live link | CPU |
 
 ## Which notebook produces what
 
@@ -24,6 +25,7 @@ The notebooks are numbered in the order in which they are run; stage 1 (data col
 * Labels used for training Task 3: notebooks 2, 4, 5, 6a and 6b (gold, audit, S5 validation, second annotation and adjudication), merged in notebook 7.
 * Everything the dashboard reads: notebook 9.
 * The de-identified data package for archiving: notebook 10.
+* The evaluation of the published dashboard: notebook 11 (results in `docs/EVALUATION.md`).
 
 ## Conventions
 
