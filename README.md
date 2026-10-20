@@ -57,6 +57,18 @@ The proposal targets were directional goals set before piloting. They were not r
 
 Further evidence is on the *Method & reliability* page: errors cluster in sentences with contrast words ("but", "however") and in rare aspects, and a blind re-labelling of 60 pairs found no negative/positive flips in a random sample of 30 (differences involved the neutral class or whether the aspect was mentioned).
 
+### Evaluation figures
+
+![Macro-F1 of BERT, TF-IDF and keyword or lexicon baselines against the proposal targets](docs/figures/fig1_macro_f1_vs_baselines_and_targets.png)
+
+![The neutral class explains most of the gap to the targets](docs/figures/fig2_neutral_class.png)
+
+![Task 2 F1 per aspect for TF-IDF, keywords and BERT](docs/figures/fig3_task2_f1_per_aspect.png)
+
+![Label quality: second annotator and blind re-labelling](docs/figures/fig4_label_quality.png)
+
+The numbers in these figures are copied from the result tables of the final run; the script is `docs/figures/make_model_figures.py`. The evaluation of the published dashboard itself is in [`docs/EVALUATION.md`](docs/EVALUATION.md).
+
 ## Limitations
 
 * Aspect sentiment was trained on a few hundred labelled pairs; the neutral class is rarely predicted correctly, so negative-vs-rest is the more meaningful measure. The three-class difference between BERT and the baseline is not statistically clear.

@@ -39,7 +39,7 @@ The proposal planned about 6,000 reviews per game. Four games reach about 6,000 
 
 * **Source.** Public Google Play store pages.
 * **Tool.** The Python library `google-play-scraper` (as stated in the project proposal, section 5.1).
-* **Collected by.** One team member, in August 2026. The per-game raw files are dated 26 August 2026 (in the file name `{game}_2026-08-26.csv`).
+* **Collected.** In August 2026. The per-game raw files are dated 26 August 2026 (in the file name `{game}_2026-08-26.csv`).
 * **Collection code and settings were not kept.** The scraper's language, country and count settings are not recorded. What the saved data shows: the reviews are in English (2 of 33,977 look non-English), the markets are `us`, `gb` and `id`, and each game has roughly 6,000 US reviews, except Royal Match.
 * **A bi-weekly update script was written but never used.** The team decided not to collect further updates, because the snapshot already exceeds the proposal's volume target (at least 12,000 reviews) and freezing the data keeps every reported number reproducible.
 
